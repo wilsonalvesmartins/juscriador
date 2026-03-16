@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  jus-criador-app:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: jus-criador-fullstack
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - jus_criador_data:/app/data
+    environment:
+      - NODE_ENV=production
+
+volumes:
+  jus_criador_data:
+    name: jus_criador_vps_data
