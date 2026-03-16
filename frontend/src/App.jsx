@@ -39,9 +39,9 @@ const fetchWithRetry = async (url, options, retries = 5) => {
 };
 
 const suggestTopicsWithGemini = async (userApiKey) => {
-  // CORREÇÃO: Utilizando a tag -latest e limpando a chave de API de espaços em branco
+  // CORREÇÃO: Utilizando o modelo oficial gemini-1.5-flash e mantendo a limpeza de espaços
   const cleanKey = userApiKey.trim();
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${cleanKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${cleanKey}`;
   const systemPrompt = "Você é um especialista em marketing jurídico trabalhista no Brasil.";
   const userPrompt = "Liste 3 temas de direito do trabalho que estão em alta ou que geram muito engajamento nas redes sociais (dores comuns de trabalhadores ou erros de empresas). Retorne APENAS os 3 temas, separados estritamente por '|' (pipe), sem numeração, sem marcadores e sem texto adicional. Exemplo: Horas extras no home office|Limbo previdenciário|Trabalho sem carteira assinada";
 
@@ -61,9 +61,9 @@ const suggestTopicsWithGemini = async (userApiKey) => {
 };
 
 const refineContentWithGemini = async (draft, action, userApiKey) => {
-  // CORREÇÃO: Utilizando a tag -latest e limpando a chave de API de espaços em branco
+  // CORREÇÃO: Utilizando o modelo oficial gemini-1.5-flash e mantendo a limpeza de espaços
   const cleanKey = userApiKey.trim();
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${cleanKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${cleanKey}`;
   const systemPrompt = "Você é um especialista em marketing jurídico. Respeite as regras da OAB (sem promessas de resultado).";
   
   let userPrompt = "";
@@ -88,9 +88,9 @@ const refineContentWithGemini = async (draft, action, userApiKey) => {
 };
 
 const generateGeminiContent = async (topic, category, userApiKey) => {
-  // CORREÇÃO: Utilizando a tag -latest e limpando a chave de API de espaços em branco
+  // CORREÇÃO: Utilizando o modelo oficial gemini-1.5-flash e mantendo a limpeza de espaços
   const cleanKey = userApiKey.trim();
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${cleanKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${cleanKey}`;
   
   let systemPrompt = `Você é um renomado especialista em marketing jurídico e um advogado trabalhista de sucesso no Brasil. 
 OBJETIVOS DO SEU CONTEÚDO:
@@ -456,287 +456,4 @@ function GenerateView({ onApprove, apiKey }) {
         </div>
 
         <div className="mb-8">
-          <label className="block text-sm font-medium text-slate-700 mb-3">Escolha o formato:</label>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {categories.map(cat => (
-              <button
-                key={cat.id}
-                onClick={() => setCategory(cat.id)}
-                className={`text-left p-4 rounded-xl border-2 transition-all ${category === cat.id ? 'border-amber-500 bg-amber-50' : 'border-gray-200 hover:border-amber-300'}`}
-              >
-                <div className="font-semibold text-slate-800">{cat.label}</div>
-                <div className="text-xs text-slate-500 mt-1">{cat.desc}</div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {error && (
-          <div className="mb-6 flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-lg text-sm">
-            <AlertCircle size={18} />
-            {error}
-          </div>
-        )}
-
-        <button 
-          onClick={handleGenerate}
-          disabled={isGenerating}
-          className="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium py-3 px-6 rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-        >
-          {isGenerating ? (
-            <><Loader2 size={20} className="animate-spin" /> Gerando Roteiro...</>
-          ) : (
-            <><PenTool size={20} /> Gerar com IA</>
-          )}
-        </button>
-      </div>
-
-      {draft && (
-        <div className="bg-white p-6 rounded-2xl shadow-lg border border-amber-200 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="flex justify-between items-center mb-4 pb-4 border-b border-gray-100">
-            <h3 className="text-xl font-bold text-slate-800">Resultado Gerado</h3>
-            <span className="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-semibold capitalize">
-              {category}
-            </span>
-          </div>
-          
-          <div className="prose prose-amber max-w-none text-slate-700 whitespace-pre-wrap relative">
-            {isRefining && (
-              <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center rounded z-10">
-                <div className="flex items-center gap-2 text-amber-600 font-semibold bg-white px-4 py-2 rounded-full shadow-md">
-                  <Loader2 size={18} className="animate-spin" /> Refinando com IA...
-                </div>
-              </div>
-            )}
-            {draft}
-          </div>
-
-          <div className="mt-6 flex flex-wrap gap-3">
-            <button 
-              onClick={() => handleRefineDraft('simplify')}
-              disabled={isRefining}
-              className="text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 py-2 px-4 rounded-lg transition-colors flex items-center gap-2"
-            >
-              <Wand2 size={16} /> ✨ Mais Didático
-            </button>
-            <button 
-              onClick={() => handleRefineDraft('hashtags')}
-              disabled={isRefining}
-              className="text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 py-2 px-4 rounded-lg transition-colors flex items-center gap-2"
-            >
-              <Sparkles size={16} /> ✨ Gerar Legenda e Hashtags
-            </button>
-          </div>
-
-          <div className="mt-8 pt-6 border-t border-gray-100 flex justify-end">
-            <button 
-              onClick={() => onApprove({ topic, category, content: draft, status: 'aprovado' })}
-              className="bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-8 rounded-xl transition-colors flex items-center gap-2 shadow-sm"
-            >
-              <CheckCircle size={20} />
-              Aprovar e Enviar para Pipeline
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// --- VIEW 2: PIPELINE (KANBAN) ---
-function PipelineView({ items, onUpdate, onDelete }) {
-  const [schedulingId, setSchedulingId] = useState(null);
-  const [scheduleDate, setScheduleDate] = useState('');
-
-  const approved = items.filter(i => i.status === 'aprovado');
-  const recorded = items.filter(i => i.status === 'gravado');
-  const scheduled = items.filter(i => i.status === 'programado');
-
-  const handleSchedule = (id) => {
-    if (!scheduleDate) return;
-    onUpdate(id, 'programado', { scheduledDate: scheduleDate });
-    setSchedulingId(null);
-    setScheduleDate('');
-  };
-
-  const PipelineCard = ({ item }) => (
-    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col gap-3 group">
-      <div className="flex justify-between items-start">
-        <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs font-medium capitalize">
-          {item.category}
-        </span>
-        <button onClick={() => onDelete(item.id)} className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Trash2 size={16} />
-        </button>
-      </div>
-      <h4 className="font-semibold text-slate-800 leading-tight">{item.topic}</h4>
-      <p className="text-sm text-slate-500 line-clamp-3 bg-gray-50 p-2 rounded">{item.content}</p>
-      
-      {item.status === 'aprovado' && (
-        <button 
-          onClick={() => onUpdate(item.id, 'gravado')}
-          className="mt-2 w-full py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-sm font-semibold rounded-lg flex items-center justify-center gap-2 transition-colors"
-        >
-          <Video size={16} /> Marcar como Gravado
-        </button>
-      )}
-
-      {item.status === 'gravado' && schedulingId !== item.id && (
-        <button 
-          onClick={() => setSchedulingId(item.id)}
-          className="mt-2 w-full py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 text-sm font-semibold rounded-lg flex items-center justify-center gap-2 transition-colors"
-        >
-          <Clock size={16} /> Programar Postagem
-        </button>
-      )}
-
-      {schedulingId === item.id && (
-        <div className="mt-2 flex flex-col gap-2 p-2 bg-amber-50 border border-amber-200 rounded-lg">
-          <input 
-            type="date" 
-            className="w-full p-2 text-sm border border-amber-300 rounded outline-none focus:ring-1 focus:ring-amber-500"
-            value={scheduleDate}
-            onChange={(e) => setScheduleDate(e.target.value)}
-          />
-          <div className="flex gap-2">
-            <button onClick={() => setSchedulingId(null)} className="flex-1 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-50">Cancelar</button>
-            <button onClick={() => handleSchedule(item.id)} className="flex-1 py-1.5 text-xs font-medium text-white bg-amber-600 rounded hover:bg-amber-700">Confirmar</button>
-          </div>
-        </div>
-      )}
-
-      {item.status === 'programado' && (
-        <div className="mt-2 py-2 bg-green-50 text-green-700 text-sm font-semibold rounded-lg flex items-center justify-center gap-2">
-          <CalendarIcon size={16} /> {new Date(item.scheduledDate + 'T12:00:00').toLocaleDateString('pt-BR')}
-        </div>
-      )}
-    </div>
-  );
-
-  return (
-    <div className="p-6 h-full flex flex-col">
-      <header className="mb-6 flex-shrink-0">
-        <h2 className="text-3xl font-bold text-slate-800">Pipeline de Produção</h2>
-        <p className="text-slate-500 mt-1">Gerencie o status dos seus conteúdos trabalhistas.</p>
-      </header>
-
-      <div className="flex-1 overflow-x-auto">
-        <div className="flex flex-col md:flex-row gap-6 min-w-max md:min-w-0 h-full pb-4">
-          
-          {/* Coluna: Aprovados */}
-          <div className="flex-1 min-w-[300px] bg-slate-100/50 rounded-2xl p-4 flex flex-col border border-slate-200">
-            <div className="flex items-center gap-2 mb-4 px-2">
-              <CheckCircle className="text-green-500" size={20} />
-              <h3 className="font-bold text-slate-700">Aprovados ({approved.length})</h3>
-            </div>
-            <div className="flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar flex-1">
-              {approved.length === 0 ? <p className="text-sm text-slate-400 text-center py-8">Nenhum roteiro aprovado.</p> : approved.map(item => <PipelineCard key={item.id} item={item} />)}
-            </div>
-          </div>
-
-          {/* Coluna: Gravados */}
-          <div className="flex-1 min-w-[300px] bg-blue-50/50 rounded-2xl p-4 flex flex-col border border-blue-100">
-            <div className="flex items-center gap-2 mb-4 px-2">
-              <Video className="text-blue-500" size={20} />
-              <h3 className="font-bold text-blue-900">Gravados ({recorded.length})</h3>
-            </div>
-            <div className="flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar flex-1">
-              {recorded.length === 0 ? <p className="text-sm text-blue-300 text-center py-8">Nenhum conteúdo gravado.</p> : recorded.map(item => <PipelineCard key={item.id} item={item} />)}
-            </div>
-          </div>
-
-          {/* Coluna: Programados */}
-          <div className="flex-1 min-w-[300px] bg-amber-50/50 rounded-2xl p-4 flex flex-col border border-amber-100">
-            <div className="flex items-center gap-2 mb-4 px-2">
-              <CalendarIcon className="text-amber-500" size={20} />
-              <h3 className="font-bold text-amber-900">Programados ({scheduled.length})</h3>
-            </div>
-            <div className="flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar flex-1">
-              {scheduled.length === 0 ? <p className="text-sm text-amber-400/80 text-center py-8">Nenhum conteúdo agendado.</p> : scheduled.map(item => <PipelineCard key={item.id} item={item} />)}
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// --- VIEW 3: CALENDÁRIO ---
-function CalendarView({ items }) {
-  const [currentDate, setCurrentDate] = useState(new Date());
-
-  const scheduledItems = items.filter(i => i.status === 'programado');
-
-  const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
-  const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
-
-  const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
-  const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
-
-  const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-  const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-
-  const blanks = Array(firstDayOfMonth).fill(null);
-  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-  const totalSlots = [...blanks, ...days];
-
-  return (
-    <div className="p-6 md:p-10 max-w-6xl mx-auto h-full flex flex-col">
-      <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 flex-shrink-0">
-        <div>
-          <h2 className="text-3xl font-bold text-slate-800">Calendário de Postagens</h2>
-          <p className="text-slate-500 mt-1">Visão geral dos seus conteúdos trabalhistas agendados.</p>
-        </div>
-        
-        <div className="flex items-center gap-4 bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-200">
-          <button onClick={prevMonth} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><ChevronLeft size={20} /></button>
-          <span className="font-bold text-lg min-w-[150px] text-center text-slate-800">
-            {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-          </span>
-          <button onClick={nextMonth} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><ChevronRight size={20} /></button>
-        </div>
-      </header>
-
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex-1 flex flex-col min-h-[500px]">
-        <div className="grid grid-cols-7 border-b border-gray-200 bg-slate-50">
-          {dayNames.map(day => (
-            <div key={day} className="py-3 text-center text-sm font-semibold text-slate-500">
-              {day}
-            </div>
-          ))}
-        </div>
-        
-        <div className="grid grid-cols-7 auto-rows-fr flex-1 bg-gray-200 gap-[1px]">
-          {totalSlots.map((day, index) => {
-            if (!day) return <div key={`blank-${index}`} className="bg-gray-50/50 min-h-[100px]"></div>;
-
-            const cellDateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-            const dayItems = scheduledItems.filter(item => item.scheduledDate === cellDateStr);
-            const isToday = new Date().toDateString() === new Date(currentDate.getFullYear(), currentDate.getMonth(), day).toDateString();
-
-            return (
-              <div key={day} className={`bg-white min-h-[100px] p-2 transition-colors hover:bg-slate-50 relative ${isToday ? 'ring-2 ring-inset ring-amber-400' : ''}`}>
-                <span className={`text-sm font-medium w-7 h-7 flex items-center justify-center rounded-full mb-1 ${isToday ? 'bg-amber-500 text-white' : 'text-slate-700'}`}>
-                  {day}
-                </span>
-                
-                <div className="flex flex-col gap-1 overflow-y-auto max-h-[calc(100%-2rem)] custom-scrollbar">
-                  {dayItems.map(item => (
-                    <div 
-                      key={item.id} 
-                      className="text-xs bg-amber-100 text-amber-800 border border-amber-200 p-1.5 rounded truncate font-medium"
-                      title={item.topic}
-                    >
-                      {item.topic}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
+          <label className="block text-sm font-medium text-slate-700 mb-3">Escolha o
