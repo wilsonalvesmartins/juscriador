@@ -8,7 +8,7 @@ services:
     container_name: jus-criador-fullstack
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "3050:8080"
     volumes:
       - jus_criador_data:/app/data
     environment:
