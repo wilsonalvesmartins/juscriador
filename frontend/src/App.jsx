@@ -20,25 +20,18 @@ import {
 // --- CONFIGURAÇÃO DA API DO GEMINI COM FALLBACK DE MODELOS ---
 const callGeminiWithFallback = async (userPrompt, systemPrompt, userApiKey) => {
   const cleanKey = userApiKey.trim();
-  // Lista de modelos: do mais eficiente/recente para os mais antigos (garantia de funcionamento)
-  const models = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro'];
+  // Lista ATUALIZADA e RECOMENDADA de modelos, baseada na documentação mais recente do Google AI Studio
+  const models = ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-1.5-flash', 'gemini-1.5-pro'];
   let lastErrorText = "";
 
   for (const model of models) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${cleanKey}`;
     
-    let payload = {};
-    if (model === 'gemini-pro') {
-        // O modelo gemini-pro (1.0) não suporta systemInstruction nativamente na v1beta, então anexamos ao texto.
-        payload = {
-            contents: [{ parts: [{ text: `[INSTRUÇÕES DO SISTEMA]:\n${systemPrompt}\n\n[PEDIDO]:\n${userPrompt}` }] }]
-        };
-    } else {
-        payload = {
-            contents: [{ parts: [{ text: userPrompt }] }],
-            systemInstruction: { parts: [{ text: systemPrompt }] }
-        };
-    }
+    // Todos os modelos 1.5 e 2.5 suportam systemInstruction perfeitamente
+    const payload = {
+        contents: [{ parts: [{ text: userPrompt }] }],
+        systemInstruction: { parts: [{ text: systemPrompt }] }
+    };
 
     try {
       const response = await fetch(url, {
