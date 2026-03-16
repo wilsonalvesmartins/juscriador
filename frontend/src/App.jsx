@@ -23,7 +23,12 @@ const fetchWithRetry = async (url, options, retries = 5) => {
   for (let i = 0; i < retries; i++) {
     try {
       const response = await fetch(url, options);
-      if (!response.ok) throw new Error(`Erro na API: ${response.status}`);
+      if (!response.ok) {
+        // Agora capturamos o erro exato que o Google retorna para facilitar o debug
+        const errorText = await response.text();
+        console.error("Erro detalhado da API do Gemini:", errorText);
+        throw new Error(`Erro na API: ${response.status}`);
+      }
       return await response.json();
     } catch (error) {
       if (i === retries - 1) throw error;
@@ -33,7 +38,8 @@ const fetchWithRetry = async (url, options, retries = 5) => {
 };
 
 const suggestTopicsWithGemini = async (userApiKey) => {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${userApiKey}`;
+  // CORREÇÃO: Utilizando o modelo público e estável gemini-1.5-flash
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${userApiKey}`;
   const systemPrompt = "Você é um especialista em marketing jurídico trabalhista no Brasil.";
   const userPrompt = "Liste 3 temas de direito do trabalho que estão em alta ou que geram muito engajamento nas redes sociais (dores comuns de trabalhadores ou erros de empresas). Retorne APENAS os 3 temas, separados estritamente por '|' (pipe), sem numeração, sem marcadores e sem texto adicional. Exemplo: Horas extras no home office|Limbo previdenciário|Trabalho sem carteira assinada";
 
@@ -53,7 +59,8 @@ const suggestTopicsWithGemini = async (userApiKey) => {
 };
 
 const refineContentWithGemini = async (draft, action, userApiKey) => {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${userApiKey}`;
+  // CORREÇÃO: Utilizando o modelo público e estável gemini-1.5-flash
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${userApiKey}`;
   const systemPrompt = "Você é um especialista em marketing jurídico. Respeite as regras da OAB (sem promessas de resultado).";
   
   let userPrompt = "";
@@ -78,7 +85,8 @@ const refineContentWithGemini = async (draft, action, userApiKey) => {
 };
 
 const generateGeminiContent = async (topic, category, userApiKey) => {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${userApiKey}`;
+  // CORREÇÃO: Utilizando o modelo público e estável gemini-1.5-flash
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${userApiKey}`;
   
   let systemPrompt = `Você é um renomado especialista em marketing jurídico e um advogado trabalhista de sucesso no Brasil. 
 OBJETIVOS DO SEU CONTEÚDO:
@@ -295,7 +303,7 @@ function SettingsView({ currentApiKey, onSave }) {
           <h3 className="text-xl font-bold text-slate-800">API Key do Google Gemini</h3>
         </div>
         <p className="text-sm text-slate-600 mb-6">
-          Sua chave da API será enviada e salva diretamente na sua VPS (Servidor Hostinger). 
+          Sua chave da API será enviada e salva diretamente na sua VPS (Servidor). 
           O uso de volumes no Docker garante que atualizações via GitHub não apaguem esses dados.
         </p>
 
@@ -347,7 +355,8 @@ function GenerateView({ onApprove, apiKey }) {
       const topics = await suggestTopicsWithGemini(apiKey);
       if (topics.length > 0) setSuggestedTopics(topics);
     } catch (err) {
-      setError("Erro ao acessar a API. Verifique sua chave nas configurações.");
+      setError("Erro ao acessar a API. Verifique o console do navegador (F12) para mais detalhes.");
+      console.error(err);
     } finally {
       setIsSuggesting(false);
     }
@@ -360,7 +369,8 @@ function GenerateView({ onApprove, apiKey }) {
       const refinedText = await refineContentWithGemini(draft, action, apiKey);
       setDraft(refinedText);
     } catch (err) {
-      setError("Erro ao refinar o texto.");
+      setError("Erro ao refinar o texto. Verifique o console do navegador (F12) para mais detalhes.");
+      console.error(err);
     } finally {
       setIsRefining(false);
     }
@@ -383,7 +393,8 @@ function GenerateView({ onApprove, apiKey }) {
       const generatedText = await generateGeminiContent(topic, category, apiKey);
       setDraft(generatedText);
     } catch (err) {
-      setError("Ocorreu um erro ao gerar o conteúdo. Verifique se a sua chave de API é válida.");
+      setError("Ocorreu um erro ao gerar o conteúdo. Verifique o console do navegador (F12) para detalhes.");
+      console.error(err);
     } finally {
       setIsGenerating(false);
     }
@@ -643,14 +654,6 @@ function PipelineView({ items, onUpdate, onDelete }) {
 
         </div>
       </div>
-      
-      {/* CSS in JS for custom scrollbar in Kanban */}
-      <style dangerouslySetInnerHTML={{__html: `
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-      `}} />
     </div>
   );
 }
@@ -670,7 +673,6 @@ function CalendarView({ items }) {
   const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
   const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
-  // Gerar grid do calendário
   const blanks = Array(firstDayOfMonth).fill(null);
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
   const totalSlots = [...blanks, ...days];
@@ -693,7 +695,6 @@ function CalendarView({ items }) {
       </header>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex-1 flex flex-col min-h-[500px]">
-        {/* Header dos dias da semana */}
         <div className="grid grid-cols-7 border-b border-gray-200 bg-slate-50">
           {dayNames.map(day => (
             <div key={day} className="py-3 text-center text-sm font-semibold text-slate-500">
@@ -702,17 +703,12 @@ function CalendarView({ items }) {
           ))}
         </div>
         
-        {/* Grid de dias */}
         <div className="grid grid-cols-7 auto-rows-fr flex-1 bg-gray-200 gap-[1px]">
           {totalSlots.map((day, index) => {
             if (!day) return <div key={`blank-${index}`} className="bg-gray-50/50 min-h-[100px]"></div>;
 
-            // Formatar data para comparação: YYYY-MM-DD
             const cellDateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-            
-            // Encontrar itens agendados para este dia
             const dayItems = scheduledItems.filter(item => item.scheduledDate === cellDateStr);
-            
             const isToday = new Date().toDateString() === new Date(currentDate.getFullYear(), currentDate.getMonth(), day).toDateString();
 
             return (
