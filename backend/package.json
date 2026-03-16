@@ -1,0 +1,12 @@
+{
+  "name": "jus-criador-backend",
+  "version": "1.0.0",
+  "description": "Servidor local para persistência de dados do JusCriador",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
