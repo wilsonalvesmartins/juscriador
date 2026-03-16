@@ -27,7 +27,8 @@ const fetchWithRetry = async (url, options, retries = 5) => {
         // Agora capturamos o erro exato que o Google retorna para facilitar o debug
         const errorText = await response.text();
         console.error("Erro detalhado da API do Gemini:", errorText);
-        throw new Error(`Erro na API: ${response.status}`);
+        // Lançar o erro com o texto da resposta ajuda a ver o problema real no console
+        throw new Error(`Erro na API: ${response.status} - ${errorText}`);
       }
       return await response.json();
     } catch (error) {
@@ -38,8 +39,9 @@ const fetchWithRetry = async (url, options, retries = 5) => {
 };
 
 const suggestTopicsWithGemini = async (userApiKey) => {
-  // CORREÇÃO: Utilizando o modelo público e estável gemini-1.5-flash
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${userApiKey}`;
+  // CORREÇÃO: Utilizando a tag -latest e limpando a chave de API de espaços em branco
+  const cleanKey = userApiKey.trim();
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${cleanKey}`;
   const systemPrompt = "Você é um especialista em marketing jurídico trabalhista no Brasil.";
   const userPrompt = "Liste 3 temas de direito do trabalho que estão em alta ou que geram muito engajamento nas redes sociais (dores comuns de trabalhadores ou erros de empresas). Retorne APENAS os 3 temas, separados estritamente por '|' (pipe), sem numeração, sem marcadores e sem texto adicional. Exemplo: Horas extras no home office|Limbo previdenciário|Trabalho sem carteira assinada";
 
@@ -59,8 +61,9 @@ const suggestTopicsWithGemini = async (userApiKey) => {
 };
 
 const refineContentWithGemini = async (draft, action, userApiKey) => {
-  // CORREÇÃO: Utilizando o modelo público e estável gemini-1.5-flash
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${userApiKey}`;
+  // CORREÇÃO: Utilizando a tag -latest e limpando a chave de API de espaços em branco
+  const cleanKey = userApiKey.trim();
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${cleanKey}`;
   const systemPrompt = "Você é um especialista em marketing jurídico. Respeite as regras da OAB (sem promessas de resultado).";
   
   let userPrompt = "";
@@ -85,8 +88,9 @@ const refineContentWithGemini = async (draft, action, userApiKey) => {
 };
 
 const generateGeminiContent = async (topic, category, userApiKey) => {
-  // CORREÇÃO: Utilizando o modelo público e estável gemini-1.5-flash
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${userApiKey}`;
+  // CORREÇÃO: Utilizando a tag -latest e limpando a chave de API de espaços em branco
+  const cleanKey = userApiKey.trim();
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${cleanKey}`;
   
   let systemPrompt = `Você é um renomado especialista em marketing jurídico e um advogado trabalhista de sucesso no Brasil. 
 OBJETIVOS DO SEU CONTEÚDO:
@@ -355,7 +359,7 @@ function GenerateView({ onApprove, apiKey }) {
       const topics = await suggestTopicsWithGemini(apiKey);
       if (topics.length > 0) setSuggestedTopics(topics);
     } catch (err) {
-      setError("Erro ao acessar a API. Verifique o console do navegador (F12) para mais detalhes.");
+      setError(`Erro ao acessar a API: ${err.message}. Verifique o console do navegador (F12) para detalhes.`);
       console.error(err);
     } finally {
       setIsSuggesting(false);
@@ -369,7 +373,7 @@ function GenerateView({ onApprove, apiKey }) {
       const refinedText = await refineContentWithGemini(draft, action, apiKey);
       setDraft(refinedText);
     } catch (err) {
-      setError("Erro ao refinar o texto. Verifique o console do navegador (F12) para mais detalhes.");
+      setError(`Erro ao refinar o texto: ${err.message}. Verifique o console (F12).`);
       console.error(err);
     } finally {
       setIsRefining(false);
@@ -393,7 +397,7 @@ function GenerateView({ onApprove, apiKey }) {
       const generatedText = await generateGeminiContent(topic, category, apiKey);
       setDraft(generatedText);
     } catch (err) {
-      setError("Ocorreu um erro ao gerar o conteúdo. Verifique o console do navegador (F12) para detalhes.");
+      setError(`Erro ao gerar o conteúdo: ${err.message}. Verifique o console (F12) para mais detalhes.`);
       console.error(err);
     } finally {
       setIsGenerating(false);
