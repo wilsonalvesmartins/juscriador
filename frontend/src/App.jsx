@@ -14,7 +14,10 @@ import {
   Sparkles,
   Wand2,
   Settings,
-  Key
+  Key,
+  Eye,
+  X,
+  Save
 } from 'lucide-react';
 
 // --- CONFIGURAÇÃO DA API DO GEMINI COM FALLBACK DE MODELOS ---
@@ -533,6 +536,10 @@ function GenerateView({ onApprove, apiKey }) {
 function PipelineView({ items, onUpdate, onDelete }) {
   const [schedulingId, setSchedulingId] = useState(null);
   const [scheduleDate, setScheduleDate] = useState('');
+  
+  // Novos estados para controlar o Modal de Edição
+  const [viewingItem, setViewingItem] = useState(null);
+  const [editContent, setEditContent] = useState('');
 
   const approved = items.filter(i => i.status === 'aprovado');
   const recorded = items.filter(i => i.status === 'gravado');
@@ -543,6 +550,17 @@ function PipelineView({ items, onUpdate, onDelete }) {
     onUpdate(id, 'programado', { scheduledDate: scheduleDate });
     setSchedulingId(null);
     setScheduleDate('');
+  };
+
+  const openEditModal = (item) => {
+    setViewingItem(item);
+    setEditContent(item.content);
+  };
+
+  const saveEdit = () => {
+    if (!viewingItem) return;
+    onUpdate(viewingItem.id, viewingItem.status, { content: editContent });
+    setViewingItem(null);
   };
 
   const PipelineCard = ({ item }) => (
@@ -557,6 +575,14 @@ function PipelineView({ items, onUpdate, onDelete }) {
       </div>
       <h4 className="font-semibold text-slate-800 leading-tight">{item.topic}</h4>
       <p className="text-sm text-slate-500 line-clamp-3 bg-gray-50 p-2 rounded">{item.content}</p>
+      
+      {/* Botão adicionado para visualizar e editar o roteiro completo */}
+      <button 
+        onClick={() => openEditModal(item)}
+        className="text-xs font-medium text-slate-600 hover:text-amber-600 flex items-center justify-center gap-1 py-1.5 bg-slate-50 hover:bg-amber-50 rounded-lg transition-colors border border-transparent hover:border-amber-200"
+      >
+        <Eye size={14} /> Visualizar / Editar Roteiro
+      </button>
       
       {item.status === 'aprovado' && (
         <button 
@@ -644,6 +670,48 @@ function PipelineView({ items, onUpdate, onDelete }) {
 
         </div>
       </div>
+
+      {/* Modal de Visualização/Edição que aparece sobre o Pipeline */}
+      {viewingItem && (
+        <div className="fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl w-full max-w-3xl h-[80vh] flex flex-col shadow-2xl">
+            <div className="flex justify-between items-center p-6 border-b border-gray-100">
+              <div>
+                <h3 className="text-xl font-bold text-slate-800 pr-8">{viewingItem.topic}</h3>
+                <span className="px-2 py-1 bg-amber-100 text-amber-800 rounded text-xs font-semibold capitalize mt-2 inline-block">
+                  {viewingItem.category}
+                </span>
+              </div>
+              <button onClick={() => setViewingItem(null)} className="p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700 rounded-full transition-colors absolute top-6 right-6">
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-hidden p-6 flex flex-col bg-slate-50">
+              <textarea 
+                className="w-full flex-1 p-5 text-slate-700 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none resize-none custom-scrollbar leading-relaxed"
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+              />
+            </div>
+
+            <div className="p-6 border-t border-gray-100 flex justify-end gap-3 bg-white rounded-b-2xl">
+              <button 
+                onClick={() => setViewingItem(null)}
+                className="px-6 py-2.5 rounded-xl font-medium text-slate-600 hover:bg-gray-100 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={saveEdit}
+                className="px-6 py-2.5 rounded-xl font-medium text-white bg-slate-900 hover:bg-slate-800 flex items-center gap-2 transition-colors shadow-sm"
+              >
+                <Save size={18} /> Salvar Alterações
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
