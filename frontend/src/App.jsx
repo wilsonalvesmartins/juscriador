@@ -20,54 +20,86 @@ import {
   Save
 } from 'lucide-react';
 
-// --- CONFIGURAÇÃO DA API DO GEMINI COM FALLBACK DE MODELOS ---
-const callGeminiWithFallback = async (userPrompt, systemPrompt, userApiKey) => {
-  const cleanKey = userApiKey.trim();
-  // Lista ATUALIZADA e RECOMENDADA de modelos, baseada na documentação mais recente do Google AI Studio
-  const models = ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-1.5-flash', 'gemini-1.5-pro'];
-  let lastErrorText = "";
-
-  for (const model of models) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${cleanKey}`;
-    
-    // Todos os modelos 1.5 e 2.5 suportam systemInstruction perfeitamente
-    const payload = {
-        contents: [{ parts: [{ text: userPrompt }] }],
-        systemInstruction: { parts: [{ text: systemPrompt }] }
-    };
-
+// --- CONFIGURAÇÃO DA API DO GEMINI ---
+const fetchWithRetry = async (url, options, retries = 5) => {
+  const delays = [1000, 2000, 4000, 8000, 16000];
+  for (let i = 0; i < retries; i++) {
     try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log(`Sucesso! Conteúdo gerado utilizando o modelo: ${model}`);
-        return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-      } else {
+      const response = await fetch(url, options);
+      if (!response.ok) {
         const errorText = await response.text();
-        lastErrorText = errorText;
-        console.warn(`Aviso: Modelo ${model} falhou (${response.status}). Tentando o próximo...`);
-        
-        // 404 (Not Found), 400 (Bad Request) ou 403 indicam que a chave não tem acesso a este modelo específico.
-        if (response.status === 404 || response.status === 400 || response.status === 403) {
-          continue; // Pula silenciosamente para o próximo modelo da lista
-        } else {
-          // 401 (Unauthorized) ou 429 (Quota Exceeded) são erros críticos da conta, avisamos o usuário.
-          throw new Error(`Erro ${response.status}: Verifique sua chave de API ou limites de uso. Google diz: ${errorText}`);
-        }
+        console.error("Erro detalhado da API do Gemini:", errorText);
+        throw new Error(`Erro na API: ${response.status} - ${errorText}`);
       }
-    } catch (err) {
-      // Repassa o erro apenas se formos o último modelo da lista
-      if (model === models[models.length - 1]) {
-        throw new Error(err.message || `Falha ao conectar com a API. Último erro: ${lastErrorText}`);
-      }
+      return await response.json();
+    } catch (error) {
+      if (i === retries - 1) throw error;
+      await new Promise(res => setTimeout(res, delays[i]));
     }
   }
-  throw new Error(`Nenhum modelo suportado pela sua chave. Detalhe do último erro: ${lastErrorText}`);
+};
+
+// NOVO SISTEMA À PROVA DE FALHAS: Descoberta Automática de Modelos
+const callGeminiWithFallback = async (userPrompt, systemPrompt, userApiKey) => {
+  const cleanKey = userApiKey.trim();
+  
+  // 1. Consultar a API do Google para listar exatamente quais modelos ESTA CHAVE tem permissão para usar
+  const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${cleanKey}`;
+  let modelName = "";
+
+  try {
+    const listData = await fetchWithRetry(listUrl, { method: 'GET' });
+    
+    // Filtra apenas modelos da família Gemini que suportam geração de texto
+    const validModels = (listData.models || []).filter(m => 
+      m.supportedGenerationMethods?.includes('generateContent') &&
+      m.name.includes('gemini')
+    );
+
+    if (validModels.length === 0) {
+       throw new Error("A sua chave é válida, mas o Google informa que ela não tem permissão para usar nenhum modelo Gemini. Verifique a sua conta no Google AI Studio.");
+    }
+
+    // Escolhe o melhor e mais atual modelo disponível (Prioridade: 1.5 Flash > 1.5 Pro > 2.0 Flash)
+    const preferredModel = 
+      validModels.find(m => m.name.includes('1.5-flash')) ||
+      validModels.find(m => m.name.includes('1.5-pro')) ||
+      validModels.find(m => m.name.includes('2.5-flash')) ||
+      validModels.find(m => m.name.includes('1.0-pro') || m.name === 'models/gemini-pro') ||
+      validModels[0];
+
+    // Salva o nome exato autorizado pelo Google (ex: "models/gemini-1.5-flash")
+    modelName = preferredModel.name; 
+    console.log("Sucesso! Modelo autorizado selecionado automaticamente:", modelName);
+
+  } catch (err) {
+    throw new Error(`Falha ao validar a chave API no Google: ${err.message}`);
+  }
+
+  // 2. Fazer a requisição para gerar o texto usando o modelo GARANTIDO
+  const url = `https://generativelanguage.googleapis.com/v1beta/${modelName}:generateContent?key=${cleanKey}`;
+  
+  let payload = {};
+  
+  // Modelos antigos (1.0) não suportam systemInstruction na v1beta, então adaptamos o formato
+  if (modelName === 'models/gemini-pro' || modelName === 'models/gemini-1.0-pro') {
+      payload = {
+          contents: [{ parts: [{ text: `[INSTRUÇÕES DO SISTEMA]:\n${systemPrompt}\n\n[PEDIDO DO USUÁRIO]:\n${userPrompt}` }] }]
+      };
+  } else {
+      payload = {
+          contents: [{ parts: [{ text: userPrompt }] }],
+          systemInstruction: { parts: [{ text: systemPrompt }] }
+      };
+  }
+
+  const data = await fetchWithRetry(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || "Erro: Resposta vazia da IA.";
 };
 
 const suggestTopicsWithGemini = async (userApiKey) => {
